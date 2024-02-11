@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  meu-container-php:
+    image: php:7.4-apache
+    ports:
+      - "8080:80"
+    volumes:
+      - ./site:/var/www/html
