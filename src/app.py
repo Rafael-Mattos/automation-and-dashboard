@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from datetime import datetime, timedelta
+import pandas as pd
+from glob import glob
+import plotly.express as px
 
 class App:
     def __init__(self, intervalo_dias_relatorio=365):
