@@ -3,3 +3,6 @@
 # Ignorar a pasta _backup dentro de sistema_chamados
 sistema_chamados/_backup/
 sistema_chamados/docker-compose.yml
+
+# Python
+src/venv/
