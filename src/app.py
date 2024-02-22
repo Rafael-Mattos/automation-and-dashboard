@@ -79,6 +79,8 @@ class App:
 
         df_status = self.gerar_df_status_chamados()
 
+        df_vencidos = self.gerar_df_vencidos()
+
         print('Total de chamados:', total_chamados)
         print('##############################################')
         print('##############################################')
@@ -89,6 +91,12 @@ class App:
         print('##############################################')
         print('##############################################')
         print('DF - Status:', df_status)
+        print('##############################################')
+        print('##############################################')
+        print('DF - Status:', df_vencidos)
+        print('##############################################')
+        print('##############################################')
+        
     
 
     #############################################################################################
@@ -190,6 +198,10 @@ class App:
         
         # Excluindo a coluna de data da conclusão, já que ela ficará vazia
         self.df_nao_concluidos = self.df_nao_concluidos.drop('conclusao', axis=1)
+
+        # Criando a coluna para os dias até o vencimento do chamado
+        data_atual = pd.to_datetime(datetime.now().date())
+        self.df_nao_concluidos['dias_ate_vencimento'] = (self.df_nao_concluidos['vencimento'] - data_atual).dt.days
     
 
     #############################################################################################
@@ -230,16 +242,55 @@ class App:
 
         return df_situacao
     
+    def gerar_df_vencidos(self):
+        """Gera df contendo os chamados vencidos, separados em grupos de acordo com um intervalo de dias fornecido."""
+        
+        df = self.df_nao_concluidos.copy()
+
+        # df['intervalos_vencimentos'] = df['dias_ate_vencimento'] // 7
+        df['intervalos_vencimentos'] = df['dias_ate_vencimento'].apply(self.separar_semanas)
+
+        return df
+    
+    def separar_semanas(self, dias_vencimento):
+        """Cria a legenda para o dataframe df_vencidos."""
+
+        semanas_vencimento = int(dias_vencimento / 7)
+
+        # return semanas_vencimento
+
+        if dias_vencimento == 0: #Está na semana do vencimento
+            retorno = 'Vence em até uma semana'
+        elif semanas_vencimento > 0:
+            retorno = f'Vencerá entre {semanas_vencimento} e {semanas_vencimento + 1}'
+        elif semanas_vencimento < 0:
+            retorno = f'Vencido há mais de {abs(semanas_vencimento)}'
+        
+        match dias_vencimento:
+            case 0:
+                retorno = 'Vence hoje'
+            case _ if dias_vencimento > 0 and semanas_vencimento == 0:
+                retorno = 'Vence em até uma semana'
+            case _ if semanas_vencimento > 0:
+                retorno = f'Vencerá entre {semanas_vencimento} e {semanas_vencimento + 1} semana(s)'
+            case _ if dias_vencimento < 0 and semanas_vencimento == 0:
+                retorno = 'Vencido há menos de uma semana'
+            case _ if semanas_vencimento < 0:
+                retorno = f'Vencido há mais de {abs(semanas_vencimento)} semana(s)'
+            # case _: # Esse seria o "else"
+            #     print("O número não se encaixa nos casos anteriores")
+        
+        return retorno
+
+        #if dias_ate_vencimento > 0:
+
 
     #############################################################################################
     ### DEBUG ###################################################################################
     #############################################################################################
 
     def testes(self):
-        arq = glob('/home/rafa/Downloads/ar*.txt')
-        
-        for a in arq:
-            os.remove(a)
+        print('Resultado:', int(1.999))
 
 if __name__ == '__main__':
     exec = App()
