@@ -8,6 +8,8 @@ import pandas as pd
 from glob import glob
 import plotly.express as px
 import time
+import schedule
+import streamlit as st
 
 class App:
     def __init__(self, intervalo_dias_relatorio=365):
@@ -15,6 +17,27 @@ class App:
         # Configurações
         self.dif_dias = intervalo_dias_relatorio # Intervalo de dias a ser utilizado para gerar o relatório
         self.pasta_download = '/home/rafa/Downloads' # Local onde o arquivo é baixado
+        self.numero = 0
+    
+    def trigger(self):
+        # Agendamento de tarefa a cada 10 minutos
+        # schedule.every(10).minutes.do(self.main)
+
+        st.title('Dataframe')
+
+        self.container = st.empty()
+
+        # Roda o script pela primeira vez
+        self.main()
+
+        # Agendamento da tarefa de atualização a cada minuto
+        schedule.every(1).minutes.do(self.main)
+
+        # Loop principal
+        while True:
+            schedule.run_pending()
+            
+            time.sleep(1)
 
     def main(self):
 
@@ -80,6 +103,19 @@ class App:
         df_status = self.gerar_df_status_chamados()
 
         df_vencidos = self.gerar_df_vencidos()
+
+        with self.container.container():
+            l1c1, l1c2 = st.columns(2)
+            l1c1.metric(
+                label="Chamados em aberto",
+                value=round(total_chamados),
+                delta=round(total_chamados) - 10,
+            )
+            l1c1.metric(
+                label="Concluídos Hoje",
+                value=round(concluidos_hoje),
+                delta=round(concluidos_hoje) - 10,
+            )
 
         print('Total de chamados:', total_chamados)
         print('##############################################')
@@ -294,7 +330,8 @@ class App:
 
 if __name__ == '__main__':
     exec = App()
-    exec.main()
+    exec.trigger()
+    # exec.main()
     # exec.testes()
 
 
