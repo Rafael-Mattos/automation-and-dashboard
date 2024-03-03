@@ -13,6 +13,7 @@ import streamlit as st
 
 class App:
     def __init__(self, intervalo_dias_relatorio=365):
+        """Cria a classe App. No momento da criação, pode ser passado o intervalo de dias que o relatório é gerado. Caso não informado, será adotado um período de 365 dias para as estatísticas."""
 
         # Configurações
         self.dif_dias = intervalo_dias_relatorio # Intervalo de dias a ser utilizado para gerar o relatório
@@ -20,20 +21,8 @@ class App:
         self.numero = 0
     
     def trigger(self):
-        # Agendamento de tarefa a cada 10 minutos
-        # schedule.every(10).minutes.do(self.main)
 
-        # Configurando a página do streamlit
-        # Esconde a barra superior
-        # st.markdown(
-        #     """
-        #     <style>
-        #         header {visibility: hidden;}
-        #         footer {visibility: hidden;}
-        #     </style>
-        #     """,
-        #     unsafe_allow_html=True
-        # )
+        # Configurações do Streamlit
         st.set_page_config(
             page_title="Estatísticas Chamados",
             page_icon=":chart_with_upwards_trend:",
@@ -75,9 +64,6 @@ class App:
             ''', 
         unsafe_allow_html=True)
 
-
-        # st.title('Dataframe')
-
         self.container = st.empty()
 
         # Roda o script pela primeira vez
@@ -89,12 +75,10 @@ class App:
         # Loop principal
         while True:
             schedule.run_pending()
-            
             time.sleep(1)
 
     def main(self):
-        """
-        ** Descomentar
+        
         # Carrega as variáveis de ambiente do arquivo .env
         load_dotenv()
 
@@ -137,7 +121,7 @@ class App:
 
         # Fecha o navegador
         self.driver.quit()
-        """
+        
         # Um vez baixado o arquivo, cria-se o df e em seguida o arquivo será excluído
         self.criar_df()
 
@@ -158,6 +142,7 @@ class App:
 
         df_vencidos = self.gerar_df_vencidos()
 
+        # Atualizando informações
         with self.container.container():
             # Criando as duas colunas da primeira linha
             l1c1, l1c2 = st.columns(2)
@@ -186,25 +171,6 @@ class App:
             # Gerando gráfico por chamados vencidos e preenchendo a segunda coluna da segunda linha
             grafico_vencidos = self.gerar_grafico_vencidos(df_vencidos)
             l2c2.plotly_chart(grafico_vencidos, use_container_width=True)
-
-        
-        print('Total de chamados:', total_chamados)
-        print('##############################################')
-        print('##############################################')
-        print('Concluídos hoje:', concluidos_hoje)
-        print('##############################################')
-        print('##############################################')
-        print('DF - Tipos chamados:', df_tipos_chamados)
-        print('##############################################')
-        print('##############################################')
-        print('DF - Status:', df_status)
-        print('##############################################')
-        print('##############################################')
-        print('DF - Status:', df_vencidos)
-        print('##############################################')
-        print('##############################################')
-        
-    
 
     #############################################################################################
     ### Métodos - Automações ####################################################################
@@ -261,8 +227,6 @@ class App:
             sys.exit()
         
         # Excluindo arquivo do relatório baixado
-        """
-        ** Descomentar
         try:
             # Se, por algum motivo, houver mais de um relatório na pasta, já exclui todos, pois isso iria gerar um erro nas estatísticas da próxima vez que o código rodasse
             for arq in arqs:
@@ -270,7 +234,7 @@ class App:
         
         except Exception as e:
             print('Relatório não foi excluído, verificar o erro:', e)
-        """
+
 
     def limpar_dados(self):
         """Limpa e formata os dados para que os mesmos possam ser analisados posteriormente."""
@@ -388,14 +352,8 @@ class App:
                 retorno = 'Vencido há menos de uma semana'
             case _ if semanas_vencimento < 0:
                 retorno = f'Vencido há mais de {abs(semanas_vencimento)} semana(s)'
-            # case _: # Esse seria o "else"
-            #     print("O número não se encaixa nos casos anteriores")
         
         return retorno
-        
-        
-
-
         
 
     #############################################################################################
@@ -488,7 +446,7 @@ class App:
             title='Chamados Vencidos',
             labels={'qtd': 'Número de Ocorrências',
                     'vencidos': 'Vencimentos'}
-            )
+        )
 
 
         # Adicionando as etiquetas
@@ -499,18 +457,7 @@ class App:
 
         return fig
     
-    #############################################################################################
-    ### DEBUG ###################################################################################
-    #############################################################################################
-
-
-    def testes(self):
-        print('Resultado:', int(1.999))
 
 if __name__ == '__main__':
     exec = App()
     exec.trigger()
-    # exec.main()
-    # exec.testes()
-
-
