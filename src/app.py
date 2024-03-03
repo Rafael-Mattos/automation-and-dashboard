@@ -23,7 +23,60 @@ class App:
         # Agendamento de tarefa a cada 10 minutos
         # schedule.every(10).minutes.do(self.main)
 
-        st.title('Dataframe')
+        # Configurando a página do streamlit
+        # Esconde a barra superior
+        # st.markdown(
+        #     """
+        #     <style>
+        #         header {visibility: hidden;}
+        #         footer {visibility: hidden;}
+        #     </style>
+        #     """,
+        #     unsafe_allow_html=True
+        # )
+        st.set_page_config(
+            page_title="Estatísticas Chamados",
+            page_icon=":chart_with_upwards_trend:",
+            layout="wide",  # Define o layout para ocupar a largura total
+            initial_sidebar_state="expanded",  # Expande a barra lateral inicialmente
+        )
+
+        # Centralizando as métricas e ocultando o cabeçalho
+        st.markdown('''
+            <style>
+                header[data-testid="stHeader"] {
+                    display: none;
+                }
+                
+                div.st-emotion-cache-0:nth-child(2) {
+                    margin-top: 0px;
+                }
+                    
+                div.st-emotion-cache-ocqkz7:nth-child(1) > div:nth-child(1) > div:nth-child(1){
+                    margin-top: 50px;
+                }
+                    
+                [data-testid="stAppViewBlockContainer"] {
+                    padding-top: 0px;
+                }
+                
+                
+                [data-testid="stMetric"] {
+                    justify-content: center;
+                    text-align: center;
+                }
+
+                [data-testid="stMetricLabel"] {
+                    display: flex;
+                    flex-direction:column; 
+                    justify-content:center";
+                }
+            </style>
+            ''', 
+        unsafe_allow_html=True)
+
+
+        # st.title('Dataframe')
 
         self.container = st.empty()
 
@@ -40,7 +93,8 @@ class App:
             time.sleep(1)
 
     def main(self):
-
+        """
+        ** Descomentar
         # Carrega as variáveis de ambiente do arquivo .env
         load_dotenv()
 
@@ -83,7 +137,7 @@ class App:
 
         # Fecha o navegador
         self.driver.quit()
-
+        """
         # Um vez baixado o arquivo, cria-se o df e em seguida o arquivo será excluído
         self.criar_df()
 
@@ -105,18 +159,35 @@ class App:
         df_vencidos = self.gerar_df_vencidos()
 
         with self.container.container():
+            # Criando as duas colunas da primeira linha
             l1c1, l1c2 = st.columns(2)
+
+            # Preenchendo a primeiro coluna da primeira linha
             l1c1.metric(
                 label="Chamados em aberto",
                 value=round(total_chamados),
-                delta=round(total_chamados) - 10,
             )
             l1c1.metric(
                 label="Concluídos Hoje",
                 value=round(concluidos_hoje),
-                delta=round(concluidos_hoje) - 10,
             )
 
+            # Gerando o gráfico por tipo de chamado e preenchendo segunda coluna da primeira linha
+            grafico_tipos_chamados = self.gerar_grafico_tipos_chamados(df_tipos_chamados)
+            l1c2.plotly_chart(grafico_tipos_chamados, use_container_width=True)
+
+            # Criando as duas colunas da segunda linha
+            l2c1, l2c2 = st.columns(2)
+
+            # gerando gráfico por status dos chamados e preenchendo a primeira coluna da segunda linha
+            grafico_status_chamados = self.gerar_grafico_status_chamados(df_status)
+            l2c1.plotly_chart(grafico_status_chamados, use_container_width=True)
+
+            # Gerando gráfico por chamados vencidos e preenchendo a segunda coluna da segunda linha
+            grafico_vencidos = self.gerar_grafico_vencidos(df_vencidos)
+            l2c2.plotly_chart(grafico_vencidos, use_container_width=True)
+
+        
         print('Total de chamados:', total_chamados)
         print('##############################################')
         print('##############################################')
@@ -190,6 +261,8 @@ class App:
             sys.exit()
         
         # Excluindo arquivo do relatório baixado
+        """
+        ** Descomentar
         try:
             # Se, por algum motivo, houver mais de um relatório na pasta, já exclui todos, pois isso iria gerar um erro nas estatísticas da próxima vez que o código rodasse
             for arq in arqs:
@@ -197,7 +270,7 @@ class App:
         
         except Exception as e:
             print('Relatório não foi excluído, verificar o erro:', e)
-
+        """
 
     def limpar_dados(self):
         """Limpa e formata os dados para que os mesmos possam ser analisados posteriormente."""
@@ -259,7 +332,7 @@ class App:
         """Gera o df com a quantidade de cada tipo de chamado. Considera apenas chamados não concluídos."""
 
         df = self.df_nao_concluidos.copy()
-
+        df['descricao'] = df['descricao'].astype(str)
         df_descricao = df['descricao'].value_counts().reset_index()
         df_descricao.columns = ['descricao', 'qtd']
         df_descricao = df_descricao.sort_values(by='qtd', ascending=True)
@@ -283,10 +356,12 @@ class App:
         
         df = self.df_nao_concluidos.copy()
 
-        # df['intervalos_vencimentos'] = df['dias_ate_vencimento'] // 7
         df['intervalos_vencimentos'] = df['dias_ate_vencimento'].apply(self.separar_semanas)
 
-        return df
+        df_vencidos = df['intervalos_vencimentos'].value_counts().reset_index()
+        df_vencidos.columns = ['vencidos', 'qtd']
+
+        return df_vencidos.sort_values(by='qtd', ascending=True)
     
     def separar_semanas(self, dias_vencimento):
         """Cria a legenda para o dataframe df_vencidos."""
@@ -317,13 +392,117 @@ class App:
             #     print("O número não se encaixa nos casos anteriores")
         
         return retorno
+        
+        
 
-        #if dias_ate_vencimento > 0:
+
+        
+
+    #############################################################################################
+    ### Métodos - Gráficos ######################################################################
+    #############################################################################################
+    
+    def personaliza_graficos(self, grafico):
+        """Estilo padrão para os gráficos a serem exibidos."""
+
+        grafico.update_layout(
+            paper_bgcolor='rgba(255,255,255,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            template="plotly_dark",  # Pode escolher um template pré-definido (exemplo: "plotly_dark")
+            font=dict(family="Roboto", color="black"),  # Personalizar a fonte do texto
+            title_x=0.5,
+            title_font=dict(size=15, family='Roboto'),
+            width=500,
+            height=300,
+            margin=dict(t=20)
+        )
+
+        # Atualizar barras para a cor específica (#011E4B)
+        grafico.update_traces(
+            marker_color='#011E4B',
+            textposition='inside',
+            textfont=dict(family='Roboto', size=12),
+        )
+
+        # Remover linhas verticais (grades) e legenda do eixo X
+        grafico.update_xaxes(title_text='', showgrid=False, zeroline=False, showline=False, showticklabels=False)
+        grafico.update_yaxes(title_text='', showgrid=False, tickfont=dict(size=12))
+
+        return grafico
+    
+    def gerar_grafico_tipos_chamados(self, df_descricao):
+        """Gera o gráfico por tipo de chamados."""
+
+        # Preenche as informações do gráfico
+        fig = px.bar(
+            df_descricao,
+            x='qtd',
+            y='descricao',
+            orientation='h',
+            title='Chamados por Descrição',
+            labels={'qtd': 'Número de Ocorrências',
+                    'descricao': 'Descrição'}
+            )
 
 
+        # Adicionando as etiquetas
+        fig.update_traces(text=df_descricao['qtd'])
+
+        # Aplicando personalização ao gráfico
+        fig = self.personaliza_graficos(fig)
+
+        return fig
+    
+    def gerar_grafico_status_chamados(self, df_situacao):
+        """Gera um gráfico por status dos chamados que não estejam concluídos."""
+
+        # Preenche as informações do gráfico
+        fig = px.bar(
+            df_situacao,
+            x='qtd',
+            y='situacao',
+            orientation='h',
+            title='Situação dos chamados',
+            labels={'qtd': 'Número de Ocorrências',
+                    'situacao': 'Situação'}
+            )
+
+
+        # Adicionando as etiquetas
+        fig.update_traces(text=df_situacao['qtd'])
+
+        # Aplicando personalização ao gráfico
+        fig = self.personaliza_graficos(fig)
+
+        return fig
+    
+    def gerar_grafico_vencidos(self, df_vencidos):
+        """Gera um gráfico por status dos chamados que não estejam concluídos."""
+
+        # Preenche as informações do gráfico
+        fig = px.bar(
+            df_vencidos,
+            x='qtd',
+            y='vencidos',
+            orientation='h',
+            title='Chamados Vencidos',
+            labels={'qtd': 'Número de Ocorrências',
+                    'vencidos': 'Vencimentos'}
+            )
+
+
+        # Adicionando as etiquetas
+        fig.update_traces(text=df_vencidos['qtd'])
+
+        # Aplicando personalização ao gráfico
+        fig = self.personaliza_graficos(fig)
+
+        return fig
+    
     #############################################################################################
     ### DEBUG ###################################################################################
     #############################################################################################
+
 
     def testes(self):
         print('Resultado:', int(1.999))

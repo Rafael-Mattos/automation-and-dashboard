@@ -6,3 +6,6 @@ sistema_chamados/docker-compose.yml
 
 # Python
 src/venv/
+
+# Rascunho da Documentacao
+documentacao/
