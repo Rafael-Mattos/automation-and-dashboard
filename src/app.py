@@ -84,6 +84,8 @@ class App:
 
         # Instanciando o Webdriver
         options = webdriver.FirefoxOptions()
+        options.add_argument('--headless')
+
         self.driver = webdriver.Firefox(options=options)
 
         # Obtém as credenciais do ambiente
